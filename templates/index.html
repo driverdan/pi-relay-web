@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Relay Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .relay-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .relay-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .relay-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .relay-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .relay-status {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            min-width: 70px;
+        }
+        
+        .status-on {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-off {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            margin: 3px;
+            min-width: 80px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-on {
+            background: #28a745;
+        }
+        
+        .btn-on:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-off {
+            background: #dc3545;
+        }
+        
+        .btn-off:hover {
+            background: #c82333;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            font-weight: bold;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .indicator-on {
+            background: #28a745;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+        
+        .indicator-off {
+            background: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .relay-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Relay Controller</h1>
+        
+        <div class="relay-grid">
+            <div class="relay-card">
+                <div class="relay-title">Relay 1</div>
+                <div class="relay-status" id="status1">
+                    <span class="status-indicator" id="indicator1"></span>
+                    <span id="statusText1">OFF</span>
+                </div>
+                <div>
+                    <button class="btn btn-on" onclick="setRelay(1, true)">ON</button>
+                    <button class="btn btn-off" onclick="setRelay(1, false)">OFF</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn" onclick="toggleRelay(1)">Toggle</button>
+                </div>
+            </div>
+            
+            <div class="relay-card">
+                <div class="relay-title">Relay 2</div>
+                <div class="relay-status" id="status2">
+                    <span class="status-indicator" id="indicator2"></span>
+                    <span id="statusText2">OFF</span>
+                </div>
+                <div>
+                    <button class="btn btn-on" onclick="setRelay(2, true)">ON</button>
+                    <button class="btn btn-off" onclick="setRelay(2, false)">OFF</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn" onclick="toggleRelay(2)">Toggle</button>
+                </div>
+            </div>
+            
+            <div class="relay-card">
+                <div class="relay-title">Relay 3</div>
+                <div class="relay-status" id="status3">
+                    <span class="status-indicator" id="indicator3"></span>
+                    <span id="statusText3">OFF</span>
+                </div>
+                <div>
+                    <button class="btn btn-on" onclick="setRelay(3, true)">ON</button>
+                    <button class="btn btn-off" onclick="setRelay(3, false)">OFF</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn" onclick="toggleRelay(3)">Toggle</button>
+                </div>
+            </div>
+            
+            <div class="relay-card">
+                <div class="relay-title">Relay 4</div>
+                <div class="relay-status" id="status4">
+                    <span class="status-indicator" id="indicator4"></span>
+                    <span id="statusText4">OFF</span>
+                </div>
+                <div>
+                    <button class="btn btn-on" onclick="setRelay(4, true)">ON</button>
+                    <button class="btn btn-off" onclick="setRelay(4, false)">OFF</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn" onclick="toggleRelay(4)">Toggle</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-danger" onclick="turnAllOff()">Turn All OFF</button>
+            <button class="btn" onclick="refreshStatus()">Refresh Status</button>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        // Update relay status display
+        function updateRelayStatus(relayNum, state) {
+            const statusElement = document.getElementById(`status${relayNum}`);
+            const statusText = document.getElementById(`statusText${relayNum}`);
+            const indicator = document.getElementById(`indicator${relayNum}`);
+            
+            if (state) {
+                statusElement.className = 'relay-status status-on';
+                statusText.textContent = 'ON';
+                indicator.className = 'status-indicator indicator-on';
+            } else {
+                statusElement.className = 'relay-status status-off';
+                statusText.textContent = 'OFF';
+                indicator.className = 'status-indicator indicator-off';
+            }
+        }
+        
+        // Show message to user
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Toggle relay state
+        async function toggleRelay(relayNum) {
+            try {
+                const response = await fetch(`/api/relay/${relayNum}/toggle`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateRelayStatus(relayNum, data.state);
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to toggle relay', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+        
+        // Set relay to specific state
+        async function setRelay(relayNum, state) {
+            try {
+                const response = await fetch(`/api/relay/${relayNum}/set`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: state })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateRelayStatus(relayNum, data.state);
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to set relay', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+        
+        // Turn all relays off
+        async function turnAllOff() {
+            try {
+                const response = await fetch('/api/all/off', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateRelayStatus(1, false);
+                    updateRelayStatus(2, false);
+                    updateRelayStatus(3, false);
+                    updateRelayStatus(4, false);
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to turn off all relays', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            }
+        }
+        
+        // Refresh relay status
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                updateRelayStatus(1, data.relay1);
+                updateRelayStatus(2, data.relay2);
+                updateRelayStatus(3, data.relay3);
+                updateRelayStatus(4, data.relay4);
+                showMessage('Status refreshed', 'success');
+            } catch (error) {
+                showMessage('Failed to refresh status: ' + error.message, 'error');
+            }
+        }
+        
+        // Initialize status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStatus();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshStatus, 30000);
+        });
+    </script>
+</body>
+</html>
